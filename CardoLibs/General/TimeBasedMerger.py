@@ -13,10 +13,10 @@ TIMESTAMP_TYPE = 'timestamp'
 
 class TimeBasedMerger(IStep):
     def __init__(self, time_column, group_by_columns, aggs, max_merge_time=16*60, first_time_column='FIRST_TIME',
-                 last_time_column='LAST_TIME', minimal_stay_time=0, time_format=None):
+                 last_time_column='LAST_TIME', minimal_time_group_time=0, time_format=None):
         self.time_column = time_column
         self.group_by_columns = group_by_columns
-        self.minimal_stay_time = minimal_stay_time
+        self.minimal_time_group_time = minimal_time_group_time
         self.max_merge_time = max_merge_time
         self.aggregations = aggs
         self.first_time_column = first_time_column
@@ -33,7 +33,7 @@ class TimeBasedMerger(IStep):
         df = self._add_time_diff(df)
         df = self._replace_nulls_with_zero(df, DIFF_COL)
         df = self._merge_rows(df, self.max_merge_time)
-        df = self._filter_minimum_stay_time(df, self.minimal_stay_time)
+        df = self._filter_minimum_time_group_time(df, self.minimal_time_group_time)
         cardo_dataframe.dataframe = df
         return cardo_dataframe
 
@@ -51,10 +51,10 @@ class TimeBasedMerger(IStep):
             F.unix_timestamp(F.lead(self.time_column).over(self.merge_window)) - F.unix_timestamp(F.col(self.time_column))))
         return df
 
-    def _filter_minimum_stay_time(self, df, minimal_stay_time):
+    def _filter_minimum_time_group_time(self, df, minimal_time_group_time):
         return df.where(
             (F.unix_timestamp(F.col(self.last_time_column)) - F.unix_timestamp(
-                F.col(self.first_time_column))) >= minimal_stay_time)
+                F.col(self.first_time_column))) >= minimal_time_group_time)
 
     def _convert_to_timestamp(self, df, *columns):
         #Keep in mind that to_timestamp convert the time to the timezone of the system unless you set in the config otherwise (see spark.sql.session.timeZone)
