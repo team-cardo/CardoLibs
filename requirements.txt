@@ -1,0 +1,5 @@
+CardoExecutor==1.3.*
+requests
+python-dateutil
+xlrd
+elasticsearch==5.4.0
